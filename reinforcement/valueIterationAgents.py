@@ -57,8 +57,6 @@ class ValueIterationAgent(ValueEstimationAgent):
         self.discount = discount
         self.iterations = iterations
         self.values = util.Counter() # A Counter is a dict with default 0
-        if iterations == 2:
-            temp = 1
         self.runValueIteration()
 
     def runValueIteration(self):
@@ -113,7 +111,7 @@ class ValueIterationAgent(ValueEstimationAgent):
         if not actions:
             return None
         m_action = actions[0]
-        m_q_value = 0
+        m_q_value = float("-inf")
         for action in actions:
             q_value = self.computeQValueFromValues(state, action)
             if q_value > m_q_value:
