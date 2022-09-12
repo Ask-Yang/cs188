@@ -10,7 +10,7 @@
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
 # Student side autograding was added by Brad Miller, Nick Hay, and
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
-
+import random
 
 # valueIterationAgents.py
 # -----------------------
@@ -105,8 +105,6 @@ class ValueIterationAgent(ValueEstimationAgent):
           terminal state, you should return None.
         """
         "*** YOUR CODE HERE ***"
-        if state == (2, 2):
-            a=1
         actions = self.mdp.getPossibleActions(state)
         if not actions:
             return None
@@ -158,6 +156,16 @@ class AsynchronousValueIterationAgent(ValueIterationAgent):
 
     def runValueIteration(self):
         "*** YOUR CODE HERE ***"
+        i = 0
+        states = self.mdp.getStates()
+        while i < self.iterations:
+            for state in states:
+                policy = self.getPolicy(state)
+                self.values[state] = self.getQValue(state, policy)
+                i += 1
+                if i >= self.iterations:
+                    break
+
 
 class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
     """
@@ -178,4 +186,41 @@ class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
 
     def runValueIteration(self):
         "*** YOUR CODE HERE ***"
+        predecessors = self.calcu_predecessors()
+        priority_queue = util.PriorityQueue()
+        states = self.mdp.getStates()
+        for state in states:
+            if not self.mdp.isTerminal(state):
+                diff = abs(self.calcu_m_QValue(state) - self.values[state])
+                priority_queue.push(state, -diff)
+        for i in range(0, self.iterations):
+            if priority_queue.isEmpty():
+                break
+            state = priority_queue.pop()
+            self.values[state] = self.calcu_m_QValue(state)
+            predecessor = predecessors[state]
+            for p in predecessor:
+                diff = abs(self.calcu_m_QValue(p) - self.values[p])
+                if diff > self.theta:
+                    priority_queue.update(p, -diff)
 
+    def calcu_m_QValue(self, state):
+        return self.computeQValueFromValues(state, self.computeActionFromValues(state))
+
+    def calcu_predecessors(self):
+        states = self.mdp.getStates()
+        if not states:
+            return None
+        predecessors = {states[0]: []}
+        for state in states:
+            actions = self.mdp.getPossibleActions(state)
+            next_states = set()
+            for action in actions:
+                nstate_props = self.mdp.getTransitionStatesAndProbs(state, action)
+                for nstate_prop in nstate_props:
+                    next_states.add(nstate_prop[0])
+            for next_state in next_states:
+                if next_state not in predecessors:
+                    predecessors.update({next_state: []})
+                predecessors[next_state].append(state)
+        return predecessors
